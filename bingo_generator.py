@@ -3,8 +3,7 @@ import random
 from pathlib import Path
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfdoc
 from reportlab.lib import colors
 from math import ceil, sqrt
 
@@ -26,18 +25,19 @@ def save_card_as_pdf(card_entries, filename, card_title):
     width, height = letter
     margin = 50
 
-    # Grid dimensions
+    # Grid layout
     num_entries = len(card_entries)
     grid_size = ceil(sqrt(num_entries))
     cell_width = (width - 2 * margin) / grid_size
     cell_height = (height - 2 * margin - 40) / grid_size
 
-    # Title
+    # Draw title
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(width / 2, height - margin / 2, card_title)
 
-    # Entries
-    c.setFont("Helvetica", 10)
+    c.setFont("Helvetica", 9)
+    checkbox_size = 12
+
     for idx, entry in enumerate(card_entries):
         row = idx // grid_size
         col = idx % grid_size
@@ -45,12 +45,33 @@ def save_card_as_pdf(card_entries, filename, card_title):
         x = margin + col * cell_width
         y = height - margin - 40 - row * cell_height
 
+        # Draw cell border
         c.setStrokeColor(colors.black)
         c.rect(x, y - cell_height, cell_width, cell_height, fill=0)
 
-        text_x = x + cell_width / 2
-        text_y = y - cell_height / 2
-        c.drawCentredString(text_x, text_y, entry)
+        # Define checkbox position
+        checkbox_x = x + 5
+        checkbox_y = y - checkbox_size - 5
+
+        # Add editable checkbox using AcroForm
+        field_name = f"cb_{idx}"
+        c.acroForm.checkbox(
+            name=field_name,
+            tooltip=entry,
+            x=checkbox_x,
+            y=checkbox_y,
+            size=checkbox_size,
+            buttonStyle='check',
+            borderColor=colors.black,
+            fillColor=colors.white,
+            textColor=colors.black,
+            forceBorder=True
+        )
+
+        # Draw entry text to the right
+        text_x = checkbox_x + checkbox_size + 4
+        text_y = checkbox_y + 2
+        c.drawString(text_x, text_y, entry)
 
     c.save()
     print(f"Saved: {filename}")

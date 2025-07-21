@@ -3,6 +3,11 @@ import random
 from pathlib import Path
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from math import ceil, sqrt
+
 
 ENTRIES_FILE = "bingo_entries.txt"
 
@@ -19,21 +24,39 @@ def save_card_as_pdf(card_entries, card_index):
     c = canvas.Canvas(pdf_path, pagesize=letter)
     width, height = letter
     margin = 50
-    line_height = 20
-    x = margin
-    y = height - margin
+    card_title = f"Bingo Card #{card_index + 1}"
 
+    # Determine grid size (e.g., for 25 entries → 5x5 grid)
+    num_entries = len(card_entries)
+    grid_size = ceil(sqrt(num_entries))  # square-ish grid
+
+    # Grid dimensions
+    cell_width = (width - 2 * margin) / grid_size
+    cell_height = (height - 2 * margin - 40) / grid_size  # reserve some height for title
+
+    # Draw title
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(x, y, f"Bingo Card #{card_index + 1}")
-    y -= 30
+    c.drawCentredString(width / 2, height - margin / 2, card_title)
 
-    c.setFont("Helvetica", 12)
-    for i, entry in enumerate(card_entries, 1):
-        c.drawString(x, y, f"{i}. {entry}")
-        y -= line_height
-        if y < margin:
-            c.showPage()
-            y = height - margin
+    # Set font for cells
+    c.setFont("Helvetica", 10)
+
+    # Draw each cell
+    for idx, entry in enumerate(card_entries):
+        row = idx // grid_size
+        col = idx % grid_size
+
+        x = margin + col * cell_width
+        y = height - margin - 40 - row * cell_height
+
+        # Draw rectangle
+        c.setStrokeColor(colors.black)
+        c.rect(x, y - cell_height, cell_width, cell_height, fill=0)
+
+        # Center text
+        text_x = x + cell_width / 2
+        text_y = y - cell_height / 2
+        c.drawCentredString(text_x, text_y, entry)
 
     c.save()
     print(f"Saved: {pdf_path}")

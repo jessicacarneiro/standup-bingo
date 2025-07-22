@@ -3,7 +3,6 @@ import random
 from pathlib import Path
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfdoc
 from reportlab.lib import colors
 from math import ceil, sqrt
 

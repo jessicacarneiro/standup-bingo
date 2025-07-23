@@ -1,7 +1,2 @@
-# Bingo Card Generator Requirements
 # PDF generation library
 reportlab>=4.0.0
-
-# Testing dependencies (optional, for development)
-# pytest>=7.0.0
-# pytest-cov>=4.0.0

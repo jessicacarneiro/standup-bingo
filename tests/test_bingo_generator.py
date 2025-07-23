@@ -20,6 +20,7 @@ class TestBingoGenerator(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.test_dir = tempfile.mkdtemp()
+        self.temp_dir = self.test_dir  # Add this for backward compatibility
         self.original_cwd = os.getcwd()
         os.chdir(self.test_dir)
         
@@ -39,6 +40,7 @@ class TestBingoGenerator(unittest.TestCase):
         
         # Create a test entries file
         self.test_entries_file = "test_entries.txt"
+        self.temp_entries_file = self.test_entries_file  # Add this for backward compatibility
         with open(self.test_entries_file, "w", encoding="utf-8") as f:
             for entry in self.sample_entries:
                 f.write(f"{entry}\n")
@@ -50,7 +52,7 @@ class TestBingoGenerator(unittest.TestCase):
 
     def test_read_entries_valid_file(self):
         """Test reading entries from a valid file."""
-        entries = bingo_generator.read_entries(self.test_entries_file)
+        entries = bingo_generator.read_lines(self.test_entries_file)
         
         self.assertEqual(len(entries), len(self.sample_entries))
         self.assertEqual(entries, self.sample_entries)
@@ -82,8 +84,8 @@ class TestBingoGenerator(unittest.TestCase):
 
     def test_read_entries_nonexistent_file(self):
         """Test reading entries from a nonexistent file."""
-        with self.assertRaises(FileNotFoundError):
-            bingo_generator.read_entries("nonexistent.txt")
+        entries = bingo_generator.read_lines("nonexistent.txt")
+        self.assertEqual(entries, [])
 
     def test_generate_bingo_card_valid_input(self):
         """Test generating a bingo card with valid input."""

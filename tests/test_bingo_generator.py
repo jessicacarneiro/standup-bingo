@@ -12,6 +12,8 @@ from reportlab.lib import colors
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import bingo_generator
+import pdf_generator
+import bingo_card
 
 
 class TestBingoGenerator(unittest.TestCase):
@@ -92,7 +94,7 @@ class TestBingoGenerator(unittest.TestCase):
         entries = self.sample_entries
         num_entries = 5
         
-        card = bingo_generator.generate_bingo_card(entries, num_entries)
+        card = bingo_card.generate_bingo_card(entries, num_entries)
         
         self.assertEqual(len(card), num_entries)
         self.assertTrue(all(entry in entries for entry in card))
@@ -103,7 +105,7 @@ class TestBingoGenerator(unittest.TestCase):
         entries = self.sample_entries
         num_entries = len(entries)
         
-        card = bingo_generator.generate_bingo_card(entries, num_entries)
+        card = bingo_card.generate_bingo_card(entries, num_entries)
         
         self.assertEqual(len(card), num_entries)
         self.assertEqual(set(card), set(entries))
@@ -114,19 +116,19 @@ class TestBingoGenerator(unittest.TestCase):
         num_entries = len(entries) + 1
         
         with self.assertRaises(ValueError):
-            bingo_generator.generate_bingo_card(entries, num_entries)
+            bingo_card.generate_bingo_card(entries, num_entries)
 
     def test_generate_bingo_card_zero_entries(self):
         """Test generating a bingo card with zero entries."""
         entries = self.sample_entries
         num_entries = 0
         
-        card = bingo_generator.generate_bingo_card(entries, num_entries)
+        card = bingo_card.generate_bingo_card(entries, num_entries)
         
         self.assertEqual(len(card), 0)
         self.assertEqual(card, [])
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     def test_save_card_as_pdf_basic_functionality(self, mock_canvas_class):
         """Test basic PDF creation functionality with new signature."""
         mock_canvas = mock_canvas_class.return_value
@@ -135,7 +137,7 @@ class TestBingoGenerator(unittest.TestCase):
         filename = "test_card.pdf"
         card_title = "Test Bingo Card"
         
-        bingo_generator.save_card_as_pdf(card_entries, filename, card_title)
+        pdf_generator.save_card_as_pdf(card_entries, filename, card_title)
         
         # Check that canvas was created with correct parameters
         mock_canvas_class.assert_called_once_with(filename, pagesize=letter)
@@ -143,7 +145,7 @@ class TestBingoGenerator(unittest.TestCase):
         # Check that save was called
         mock_canvas.save.assert_called_once()
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     def test_save_card_as_pdf_with_checkboxes(self, mock_canvas_class):
         """Test PDF creation with interactive checkboxes."""
         mock_canvas = mock_canvas_class.return_value
@@ -153,7 +155,7 @@ class TestBingoGenerator(unittest.TestCase):
         filename = "test_card.pdf"
         title = "Test Bingo Card"
         
-        bingo_generator.save_card_as_pdf(entries, filename, title)
+        pdf_generator.save_card_as_pdf(entries, filename, title)
         
         # Verify canvas was created with correct parameters
         mock_canvas_class.assert_called_once_with(filename, pagesize=letter)
@@ -188,14 +190,14 @@ class TestBingoGenerator(unittest.TestCase):
         # Verify canvas was saved
         mock_canvas.save.assert_called_once()
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     def test_save_card_as_pdf_grid_layout(self, mock_canvas_class):
         """Test that PDF uses proper grid layout for different numbers of entries."""
         mock_canvas = mock_canvas_class.return_value
         
         # Test with 9 entries (should be 3x3 grid)
         entries_9 = [f"Entry {i}" for i in range(1, 10)]
-        bingo_generator.save_card_as_pdf(entries_9, "test_9.pdf", "Test Card")
+        pdf_generator.save_card_as_pdf(entries_9, "test_9.pdf", "Test Card")
         
         # Should have 9 rectangles (one per cell) and 9 checkboxes
         self.assertEqual(mock_canvas.rect.call_count, 9)
@@ -207,13 +209,13 @@ class TestBingoGenerator(unittest.TestCase):
         
         # Test with 16 entries (should be 4x4 grid)
         entries_16 = [f"Entry {i}" for i in range(1, 17)]
-        bingo_generator.save_card_as_pdf(entries_16, "test_16.pdf", "Test Card")
+        pdf_generator.save_card_as_pdf(entries_16, "test_16.pdf", "Test Card")
         
         # Should have 16 rectangles and 16 checkboxes
         self.assertEqual(mock_canvas.rect.call_count, 16)
         self.assertEqual(mock_canvas.acroForm.checkbox.call_count, 16)
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     def test_save_card_as_pdf_unicode_entries(self, mock_canvas_class):
         """Test PDF creation with Unicode characters in entries."""
         mock_canvas = mock_canvas_class.return_value
@@ -222,7 +224,7 @@ class TestBingoGenerator(unittest.TestCase):
         filename = "unicode_test.pdf"
         title = "Unicode Test Card"
         
-        bingo_generator.save_card_as_pdf(unicode_entries, filename, title)
+        pdf_generator.save_card_as_pdf(unicode_entries, filename, title)
         
         # Verify checkboxes were created with Unicode tooltips
         checkbox_calls = mock_canvas.acroForm.checkbox.call_args_list
@@ -234,7 +236,7 @@ class TestBingoGenerator(unittest.TestCase):
         text_calls = mock_canvas.drawString.call_args_list
         self.assertEqual(len(text_calls), len(unicode_entries))
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     @patch('builtins.print')
     def test_save_card_as_pdf_print_confirmation(self, mock_print, mock_canvas_class):
         """Test that save confirmation is printed."""
@@ -244,12 +246,12 @@ class TestBingoGenerator(unittest.TestCase):
         filename = "test_print.pdf"
         title = "Test Card"
         
-        bingo_generator.save_card_as_pdf(entries, filename, title)
+        pdf_generator.save_card_as_pdf(entries, filename, title)
         
         # Verify confirmation message was printed
         mock_print.assert_called_once_with(f"Saved: {filename}")
 
-    @patch('bingo_generator.canvas.Canvas')
+    @patch('pdf_generator.canvas.Canvas')
     def test_save_card_as_pdf_font_settings(self, mock_canvas_class):
         """Test that correct fonts are applied."""
         mock_canvas = mock_canvas_class.return_value
@@ -258,7 +260,7 @@ class TestBingoGenerator(unittest.TestCase):
         filename = "font_test.pdf"
         title = "Font Test Card"
         
-        bingo_generator.save_card_as_pdf(entries, filename, title)
+        pdf_generator.save_card_as_pdf(entries, filename, title)
         
         # Verify font settings
         font_calls = mock_canvas.setFont.call_args_list
@@ -286,8 +288,8 @@ class TestBingoGenerator(unittest.TestCase):
         ]
         
         for entries, filename, title in test_cases:
-            with patch('bingo_generator.canvas.Canvas') as mock_canvas_class:
-                bingo_generator.save_card_as_pdf(entries, filename, title)
+            with patch('pdf_generator.canvas.Canvas') as mock_canvas_class:
+                pdf_generator.save_card_as_pdf(entries, filename, title)
                 mock_canvas_class.assert_called_once_with(filename, pagesize=letter)
 
 
@@ -399,7 +401,7 @@ class TestMainFunction(unittest.TestCase):
         self.assertEqual(calls[1][0][1], "bingo_card_Diogo_Santos.pdf")
         self.assertEqual(calls[1][0][2], "Bingo Card - Diogo Santos")
 
-    @patch('sys.argv', ['bingo_generator.py', '15', '1'])
+    @patch('sys.argv', ['bingo_generator.py', '25', '1'])
     @patch('sys.exit')
     def test_main_too_many_entries(self, mock_exit):
         """Test main function when requesting more entries than available."""
@@ -473,7 +475,7 @@ class TestIntegration(unittest.TestCase):
         num_cards = 2
         
         for i in range(num_cards):
-            card = bingo_generator.generate_bingo_card(loaded_entries, num_entries)
+            card = bingo_card.generate_bingo_card(loaded_entries, num_entries)
             self.assertEqual(len(card), num_entries)
             self.assertTrue(all(entry in loaded_entries for entry in card))
 
@@ -534,7 +536,7 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(loaded_entries, unicode_entries)
         
         # Test card generation with Unicode
-        card = bingo_generator.generate_bingo_card(loaded_entries, 3)
+        card = bingo_card.generate_bingo_card(loaded_entries, 3)
         self.assertEqual(len(card), 3)
         self.assertTrue(all(entry in unicode_entries for entry in card))
 

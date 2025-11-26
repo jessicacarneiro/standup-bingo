@@ -9,15 +9,16 @@ import os
 from unittest.mock import patch, MagicMock
 
 # Add the project directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import bingo_generator
+import pdf_generator
 
 def test_checkbox_functionality():
     """Test that checkboxes are properly created in PDFs."""
     print("Testing checkbox functionality...")
     
-    with patch('bingo_generator.canvas.Canvas') as mock_canvas_class:
+    with patch('pdf_generator.canvas.Canvas') as mock_canvas_class:
         # Create mock canvas and acroForm
         mock_canvas = MagicMock()
         mock_acroform = MagicMock()
@@ -30,7 +31,7 @@ def test_checkbox_functionality():
         title = "Checkbox Test Card"
         
         # Call the function
-        bingo_generator.save_card_as_pdf(entries, filename, title)
+        pdf_generator.save_card_as_pdf(entries, filename, title)
         
         # Verify checkboxes were created
         assert mock_acroform.checkbox.call_count == len(entries), f"Expected {len(entries)} checkboxes, got {mock_acroform.checkbox.call_count}"

@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import bingo_generator
+import bingo_card
 
 
 class TestFileOperations(unittest.TestCase):
@@ -45,7 +46,7 @@ class TestFileOperations(unittest.TestCase):
             for entry in special_entries:
                 f.write(f"{entry}\n")
         
-        entries = bingo_generator.read_entries(test_file)
+        entries = bingo_generator.read_lines(test_file)
         
         # Check that whitespace is stripped
         expected = [entry.strip() for entry in special_entries]
@@ -60,7 +61,7 @@ class TestFileOperations(unittest.TestCase):
             for entry in large_entries:
                 f.write(f"{entry}\n")
         
-        entries = bingo_generator.read_entries(test_file)
+        entries = bingo_generator.read_lines(test_file)
         
         self.assertEqual(len(entries), 1000)
         self.assertEqual(entries[0], "Entry number 0")
@@ -84,7 +85,7 @@ class TestFileOperations(unittest.TestCase):
             for entry in mixed_entries:
                 f.write(f"{entry}\n")
         
-        entries = bingo_generator.read_entries(test_file)
+        entries = bingo_generator.read_lines(test_file)
         self.assertEqual(entries, mixed_entries)
 
     def test_read_entries_empty_file(self):
@@ -93,7 +94,7 @@ class TestFileOperations(unittest.TestCase):
         with open(test_file, "w", encoding="utf-8") as f:
             pass  # Create empty file
         
-        entries = bingo_generator.read_entries(test_file)
+        entries = bingo_generator.read_lines(test_file)
         self.assertEqual(entries, [])
 
     def test_read_entries_only_whitespace(self):
@@ -105,7 +106,7 @@ class TestFileOperations(unittest.TestCase):
             f.write("\n")
             f.write("    \t   \n")
         
-        entries = bingo_generator.read_entries(test_file)
+        entries = bingo_generator.read_lines(test_file)
         self.assertEqual(entries, [])
 
 
@@ -115,7 +116,7 @@ class TestBingoCardGeneration(unittest.TestCase):
     def test_generate_single_entry_card(self):
         """Test generating a card with a single entry."""
         entries = ["Single entry"]
-        card = bingo_generator.generate_bingo_card(entries, 1)
+        card = bingo_card.generate_bingo_card(entries, 1)
         
         self.assertEqual(len(card), 1)
         self.assertEqual(card[0], "Single entry")
@@ -128,7 +129,7 @@ class TestBingoCardGeneration(unittest.TestCase):
         # Generate multiple cards
         cards = []
         for _ in range(20):
-            card = bingo_generator.generate_bingo_card(entries, num_entries)
+            card = bingo_card.generate_bingo_card(entries, num_entries)
             cards.append(tuple(sorted(card)))  # Sort for comparison
         
         # Check that we get different combinations
@@ -143,7 +144,7 @@ class TestBingoCardGeneration(unittest.TestCase):
         # The function should still work, but behavior may vary
         # depending on how random.sample handles duplicates
         try:
-            card = bingo_generator.generate_bingo_card(entries, 3)
+            card = bingo_card.generate_bingo_card(entries, 3)
             self.assertLessEqual(len(card), 3)
         except ValueError:
             # This is also acceptable behavior
@@ -154,12 +155,12 @@ class TestBingoCardGeneration(unittest.TestCase):
         entries = ["A", "B", "C", "D", "E"]
         
         # Test with exact number of entries
-        card = bingo_generator.generate_bingo_card(entries, 5)
+        card = bingo_card.generate_bingo_card(entries, 5)
         self.assertEqual(len(card), 5)
         self.assertEqual(set(card), set(entries))
         
         # Test with one less than available
-        card = bingo_generator.generate_bingo_card(entries, 4)
+        card = bingo_card.generate_bingo_card(entries, 4)
         self.assertEqual(len(card), 4)
         self.assertTrue(set(card).issubset(set(entries)))
 
@@ -192,8 +193,9 @@ class TestErrorHandling(unittest.TestCase):
         os.chmod(test_file, 0o000)
         
         try:
-            with self.assertRaises(PermissionError):
-                bingo_generator.read_entries(test_file)
+            # read_lines should handle permission errors gracefully and return empty list
+            entries = bingo_generator.read_lines(test_file)
+            self.assertEqual(entries, [])
         finally:
             # Restore permissions for cleanup
             os.chmod(test_file, 0o644)
@@ -203,19 +205,19 @@ class TestErrorHandling(unittest.TestCase):
         entries = ["A", "B", "C"]
         
         with self.assertRaises(ValueError):
-            bingo_generator.generate_bingo_card(entries, -1)
+            bingo_card.generate_bingo_card(entries, -1)
 
     def test_generate_card_empty_source(self):
         """Test card generation with empty source entries."""
         entries = []
         
         # Requesting 0 entries should work
-        card = bingo_generator.generate_bingo_card(entries, 0)
+        card = bingo_card.generate_bingo_card(entries, 0)
         self.assertEqual(card, [])
         
         # Requesting any positive number should fail
         with self.assertRaises(ValueError):
-            bingo_generator.generate_bingo_card(entries, 1)
+            bingo_card.generate_bingo_card(entries, 1)
 
 
 if __name__ == '__main__':
